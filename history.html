@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Partidas</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #notes-tooltip {
+            position: fixed;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+            max-width: 300px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            text-align: left;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+            z-index: 50;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        #notes-tooltip.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .filters-section {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 auto;
+        }
+
+        .filter-group.search-field {
+            flex: 1 1 auto;
+            min-width: 250px;
+        }
+
+        .filter-group.search-field.deck-field {
+            flex: 1 1 auto;
+            min-width: 250px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .filter-group input[type="text"],
+        .filter-group input[type="date"],
+        .filter-group input[type="number"],
+        .filter-group select {
+            padding: 0.5rem 0.625rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+            height: 2.25rem;
+        }
+
+        .filter-group input[type="date"] {
+            max-width: 160px;
+        }
+
+        .filter-group input[type="number"] {
+            max-width: 80px;
+        }
+
+        .position-filters {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        .filter-group input[type="text"]:focus,
+        .filter-group input[type="date"]:focus,
+        .filter-group input[type="number"]:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .filter-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .filter-group input[type="date"] {
+            color: var(--text-muted);
+        }
+
+        .filter-group input[type="date"]:valid {
+            color: var(--text-primary);
+        }
+
+        .filter-group input[type="date"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-clear-filters {
+            background-color: var(--accent);
+            border: 1px solid var(--accent);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-clear-filters:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .advanced-filters-toggle {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.625rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            height: 2.25rem;
+        }
+
+        .advanced-filters-toggle:hover {
+            background-color: var(--surface-highlight);
+            border-color: var(--surface-highlight);
+        }
+
+        .advanced-filters {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .advanced-filters.open {
+            display: block;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .sort-controls {
+            display: none;
+            gap: 0.75rem;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .sort-controls .filter-group {
+            flex: 0 0 auto;
+        }
+
+        .sort-controls select {
+            padding: 0.5rem 0.625rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .sort-controls select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        table thead th {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+
+        table thead th:hover {
+            background-color: rgba(62, 102, 120, 0.3);
+        }
+
+        table thead th .sort-arrow {
+            display: none;
+            margin-left: 0.5rem;
+            font-size: 0.75em;
+            color: var(--accent);
+        }
+
+        table thead th.sorted .sort-arrow {
+            display: inline-block;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.75rem;
+            }
+
+            thead th,
+            tbody td {
+                padding: 0.5rem 0.25rem;
+            }
+        }
+
+        .elimination-name {
+            color: #ff6b6b;
+            font-weight: 300;
+            font-size: 0.75rem;
+        }
+
+        .elimination-type {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 300;
+        }
+
+        .elimination-turn {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 300;
+        }
+
+        .winner-badge {
+            color: #ffd700;
+            font-weight: 300;
+            font-size: 0.75rem;
+            line-height: 150%;
+            margin-top: 0.25rem;
+        }
+
+        .elimination-info {
+            line-height: 150%;
+            margin-top: 0.25rem;
+        }
+
+        #filter-turn-type {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none;
+            padding-right: 0.25rem;
+            text-align-last: center;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        #filter-turn-type::-ms-expand {
+            display: none;
+        }
+
+        #filter-turn-type option:checked {
+            color: var(--text-primary);
+        }
+
+        #filter-turn-type.active {
+            color: var(--text-primary) !important;
+        }
+
+        #filter-turn.active {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-lg">
+        <div class="page-header">
+            <h1 class="page-title">Histórico de Partidas</h1>
+        </div>
+
+        <div class="nav-section">
+            <a href="reg.html" class="nav-button">Registro</a>
+            <a href="history.html" class="nav-button active">Histórico</a>
+            <a href="stats.html" class="nav-button">Estatísticas</a>
+            <a href="player.html" class="nav-button">Jogador</a>
+        </div>
+
+        <div class="filters-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="filter-date-from">Data de Início</label>
+                    <input type="date" id="filter-date-from">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-date-to">Data Final</label>
+                    <input type="date" id="filter-date-to">
+                </div>
+                <div class="filter-group" style="position: relative;">
+                    <label for="filter-turn">Turno</label>
+                    <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-tertiary); height: 2.25rem; overflow: hidden;">
+                        <select id="filter-turn-type" style="border: none; background-color: transparent; font-size: 0.875rem; cursor: pointer; padding: 0.5rem 0.25rem; flex-shrink: 0; width: auto; min-width: 35px; appearance: none; -webkit-appearance: none; -moz-appearance: none; color: var(--text-muted);">
+                            <option value="equals" style="color: var(--text-primary);">Igual à</option>
+                            <option value="greater" style="color: var(--text-primary);">Maior que</option>
+                            <option value="less" style="color: var(--text-primary);">Menor que</option>
+                        </select>
+                        <input type="number" id="filter-turn" min="1" placeholder="0" style="border: none; background-color: transparent; color: var(--text-primary); font-size: 0.875rem; padding: 0.5rem; flex: 1; min-width: 50px;">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-search-player">Jogador</label>
+                    <input type="text" id="filter-search-player" placeholder="Nome...">
+                </div>
+                <div class="filter-group search-field deck-field">
+                    <label for="filter-search-deck">Deck</label>
+                    <input type="text" id="filter-search-deck" placeholder="Nome...">
+                </div>
+                <button id="btn-advanced-filters" class="advanced-filters-toggle" title="Filtros Avançados">▼ Filtros avançados</button>
+                <button id="btn-clear-filters" class="btn-clear-filters">Limpar</button>
+            </div>
+
+            <div id="advanced-filters" class="advanced-filters">
+                <h3 style="color: var(--text-primary); font-size: 1rem; margin-bottom: 1rem;">Filtrar por Posição</h3>
+                <div class="position-filters">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="filter-pos-1" value="1">
+                        <label for="filter-pos-1">1º Lugar</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="filter-pos-2" value="2">
+                        <label for="filter-pos-2">2º Lugar</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="filter-pos-3" value="3">
+                        <label for="filter-pos-3">3º Lugar</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="filter-pos-4" value="4">
+                        <label for="filter-pos-4">4º Lugar</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="sort-controls">
+                <div class="filter-group">
+                    <label for="sort-select">Ordenar por</label>
+                    <select id="sort-select">
+                        <option value="date-desc">Data (Mais Recentes)</option>
+                        <option value="date-asc">Data (Mais Antigas)</option>
+                        <option value="turn-asc">Turno (Crescente)</option>
+                        <option value="turn-desc">Turno (Decrescente)</option>
+                        <option value="winner-asc">1º Lugar (A-Z)</option>
+                        <option value="2nd-asc">2º Lugar (A-Z)</option>
+                        <option value="3rd-asc">3º Lugar (A-Z)</option>
+                        <option value="4th-asc">4º Lugar (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-sort="date"><span>Data</span><span class="sort-arrow">↓</span></th>
+                            <th data-sort="turn" style="text-align: center;"><span>Turno</span><span class="sort-arrow">↕</span></th>
+                            <th data-sort="winner"><span class="text-rank-gold">1º Lugar</span><span class="sort-arrow">↕</span></th>
+                            <th data-sort="2nd"><span>2º Lugar</span><span class="sort-arrow">↕</span></th>
+                            <th data-sort="3rd"><span>3º Lugar</span><span class="sort-arrow">↕</span></th>
+                            <th data-sort="4th"><span>4º Lugar</span><span class="sort-arrow">↕</span></th>
+                            <th style="text-align: center;"><span>Info</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+
+            <div id="loading" class="text-center p-6 hidden">
+                <div class="loading-spinner"></div>
+                <p>Carregando histórico...</p>
+            </div>
+
+            <div class="pagination">
+                <button id="btn-load-more" class="btn btn-primary hidden">
+                    Carregar Mais
+                </button>
+                <p id="end-msg" class="text-muted hidden" style="margin-top: 1rem;">
+                    Fim do histórico.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="notes-tooltip"></div>
+
+    <script type="module" src="js/pages/history.js"></script>
+</body>
+</html>

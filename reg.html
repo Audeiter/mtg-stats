@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Partida</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            padding: 1rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .form-section {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.625rem 0.75rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .player-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .player-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .player-card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .btn-remove-player {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .btn-remove-player:hover {
+            opacity: 0.7;
+        }
+
+        .player-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .player-fields-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .add-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            background-color: var(--accent);
+            color: white;
+            border: 1px solid var(--accent);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .add-button:hover {
+            background-color: var(--accent-hover, #4f46e5);
+            border-color: var(--accent-hover, #4f46e5);
+        }
+
+        .add-button:disabled {
+            display: none;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .footer-actions .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+        }
+
+        .validation-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .validation-modal.active {
+            display: flex;
+        }
+
+        .validation-modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .validation-modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--danger);
+        }
+
+        .validation-modal-body {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .validation-modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .nav-section {
+                flex-wrap: wrap;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .player-fields {
+                grid-template-columns: 1fr;
+            }
+
+            .player-fields-row {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-actions {
+                flex-direction: column;
+            }
+
+            .footer-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-sm" style="max-width: 900px; margin: 0 auto;">
+        <div class="page-header">
+            <h1 class="page-title">Registro de Partida</h1>
+        </div>
+
+        <div class="nav-section">
+            <a href="reg.html" class="nav-button active">Registro</a>
+            <a href="history.html" class="nav-button">Histórico</a>
+            <a href="stats.html" class="nav-button">Estatísticas</a>
+            <a href="player.html" class="nav-button">Jogador</a>
+        </div>
+
+        <form id="matchForm">
+            <!-- Data da Partida -->
+            <div class="form-section">
+                <div class="section-title">Data da Partida</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="date" id="match-date" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vencedor -->
+            <div class="form-section">
+                <div class="section-title">Vencedor</div>
+                <div class="player-fields">
+                    <div class="form-group">
+                        <label>Nome do Jogador</label>
+                        <div class="list-searchable-wrapper">
+                            <input type="text" id="winner-player" class="list-searchable-input" placeholder="Nome do vencedor..." required>
+                            <div id="winner-player-list" class="list-searchable-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Deck Utilizado</label>
+                        <div class="list-searchable-wrapper">
+                            <input type="text" id="winner-deck" class="list-searchable-input" placeholder="Nome do deck..." required>
+                            <div id="winner-deck-list" class="list-searchable-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jogadores Eliminados -->
+            <div class="form-section">
+                <div class="section-title">Jogadores Eliminados</div>
+                <div id="eliminated-players-container"></div>
+                <button type="button" id="btn-add-player" class="add-button">
+                    + Adicionar Jogador
+                </button>
+            </div>
+
+            <!-- Observações -->
+            <div class="form-section">
+                <div class="section-title">Observações</div>
+                <div class="form-group">
+                    <textarea id="match-notes" rows="4" placeholder="Anotações sobre a partida..."></textarea>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="footer-actions">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='stats.html'">Cancelar</button>
+                <button type="submit" id="btn-save" class="btn btn-success">Salvar Partida</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Validação -->
+    <div id="validation-modal" class="validation-modal">
+        <div class="validation-modal-content">
+            <h2 class="validation-modal-title">Validação de Dados</h2>
+            <div class="validation-modal-body" id="validation-message"></div>
+            <div class="validation-modal-footer">
+                <button type="button" class="btn btn-success" id="btn-continue-invalid">Continuar Mesmo Assim</button>
+                <button type="button" class="btn btn-secondary" id="btn-close-validation">Voltar para Corrigir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template para Jogador Eliminado -->
+    <template id="eliminated-player-template">
+        <div class="player-card" data-player-index="0">
+            <div class="player-card-header">
+                <div class="player-card-title">Novo Jogador</div>
+                <button type="button" class="btn-remove-player">×</button>
+            </div>
+            
+            <div class="player-fields">
+                <div class="form-group">
+                    <label>Nome do Jogador</label>
+                    <div class="list-searchable-wrapper">
+                        <input type="text" class="elim-player-name list-searchable-input" placeholder="Nome...">
+                        <div class="elim-player-list list-searchable-dropdown"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Deck Utilizado</label>
+                    <div class="list-searchable-wrapper">
+                        <input type="text" class="elim-player-deck list-searchable-input" placeholder="Nome do deck...">
+                        <div class="elim-player-deck-list list-searchable-dropdown"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-fields-row">
+                <div class="form-group">
+                    <label>Eliminado por</label>
+                    <div class="list-searchable-wrapper">
+                        <input type="text" class="elim-player-by list-searchable-input" placeholder="Nome do jogador...">
+                        <div class="elim-player-by-list list-searchable-dropdown"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Eliminação</label>
+                    <select class="elim-type list-simple-select">
+                        <option value="">Selecione...</option>
+                        <option value="Combat Damage">Combat Damage</option>
+                        <option value="Commander Damage">Commander Damage</option>
+                        <option value="Non-Combat Damage">Non-Combat Damage</option>
+                        <option value="Other">Outro (Mill/Infect)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Turno da Eliminação</label>
+                    <input type="number" class="elim-turn" min="1" placeholder="Turno nº">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script type="module" src="js/pages/register.js"></script>
+</body>
+</html>

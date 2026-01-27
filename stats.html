@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estatísticas MTG</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+
+        .stat-info h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .status-live {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--success);
+        }
+
+        .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn-refresh {
+            padding: 0.5rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .btn-refresh:hover {
+            background-color: var(--border-color);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .controls select,
+        .controls input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .table-wrapper {
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .stat-header {
+                flex-direction: column;
+            }
+
+            .tabs {
+                gap: 0.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .controls select,
+            .controls input {
+                min-width: auto;
+            }
+
+            table {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-lg">
+        <div class="page-header">
+            <h1 class="page-title">Estatísticas</h1>
+        </div>
+
+        <div class="nav-section">
+            <a href="reg.html" class="nav-button">Registro</a>
+            <a href="history.html" class="nav-button">Histórico</a>
+            <a href="stats.html" class="nav-button active">Estatísticas</a>
+            <a href="player.html" class="nav-button">Jogador</a>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <button id="tab-players" class="tab active">Jogadores</button>
+                <button id="tab-decks" class="tab">Decks</button>
+            </div>
+
+            <div class="controls">
+                <select id="year-select" class="list-simple-select">
+                    <option value="total">Geral (Tudo)</option>
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+                <input type="text" id="search-input" placeholder="Buscar..." />
+            </div>
+
+            <div id="loading-msg" class="text-center p-6">
+                <div class="loading-spinner"></div>
+                <p>Processando estatísticas...</p>
+            </div>
+
+            <div id="table-container" class="hidden table-wrapper">
+                <table>
+                    <thead>
+                        <tr id="table-header"></tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/pages/stats.js"></script>
+</body>
+</html>
