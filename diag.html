@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Diagnóstico de Componentes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body style="padding: 2rem; background: var(--bg-primary); color: var(--text-primary); font-family: monospace;">
+  <h1>Diagnóstico de Componentes</h1>
+  <pre id="log" style="background: var(--bg-secondary); padding: 1rem; overflow: auto; height: 400px; border: 1px solid var(--border-color);"></pre>
+
+  <script type="module">
+    const log = document.getElementById('log');
+    const logMsg = (msg) => {
+      log.textContent += msg + '\n';
+      console.log(msg);
+    };
+
+    try {
+      logMsg('Iniciando diagnóstico...\n');
+
+      // Test 1: Import statsComponents
+      logMsg('Test 1: Importando statsComponents.js...');
+      import('./js/modules/statsComponents.js')
+        .then(mod => {
+          logMsg('✓ statsComponents.js carregado');
+          const funcs = Object.getOwnPropertyNames(mod).filter(n => typeof mod[n] === 'function');
+          logMsg(`  Funções encontradas: ${funcs.join(', ')}`);
+          logMsg(`  Total: ${funcs.length} funções\n`);
+        })
+        .catch(err => logMsg('✗ Erro: ' + err.message + '\n'));
+
+      // Test 2: Import domUtils
+      logMsg('Test 2: Importando domUtils.js...');
+      import('./js/modules/domUtils.js')
+        .then(mod => {
+          logMsg('✓ domUtils.js carregado');
+          const funcs = Object.getOwnPropertyNames(mod).filter(n => typeof mod[n] === 'function');
+          logMsg(`  Funções: ${funcs.length} encontradas\n`);
+        })
+        .catch(err => logMsg('✗ Erro: ' + err.message + '\n'));
+
+      // Test 3: Import dataProcessor
+      logMsg('Test 3: Importando dataProcessor.js...');
+      import('./js/modules/dataProcessor.js')
+        .then(mod => {
+          logMsg('✓ dataProcessor.js carregado');
+          const funcs = Object.getOwnPropertyNames(mod).filter(n => typeof mod[n] === 'function');
+          logMsg(`  Funções: ${funcs.length} encontradas\n`);
+        })
+        .catch(err => logMsg('✗ Erro: ' + err.message + '\n'));
+
+    } catch (err) {
+      logMsg('Erro geral: ' + err.message);
+    }
+  </script>
+</body>
+</html>

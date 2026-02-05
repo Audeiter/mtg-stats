@@ -533,9 +533,9 @@ class HistoryPage {
           
           // Mostrar seta apropriada baseado no tipo de coluna
           if (column === 'date') {
-            arrow.textContent = this.sortConfig.direction === 'desc' ? '↓' : '↑';
+            arrow.textContent = this.sortConfig.direction === 'desc' ? '▼' : '▲';
           } else if (column === 'turn') {
-            arrow.textContent = this.sortConfig.direction === 'asc' ? '↑' : '↓';
+            arrow.textContent = this.sortConfig.direction === 'asc' ? '▲' : '▼';
           } else {
             // Posições - mostrar estado (estado 0 = A-Z deck, estado 1 = Z-A deck, estado 2 = A-Z jogador, estado 3 = Z-A jogador)
             const state = this.positionSortStates[column];

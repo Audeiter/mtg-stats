@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Módulos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="padding: 2rem; background: var(--bg-primary); color: var(--text-primary);">
+    <h1>Teste de Carregamento de Módulos</h1>
+    <div id="results" style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; white-space: pre-wrap; font-family: monospace;"></div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+        const log = (msg) => {
+            results.innerHTML += msg + '\n';
+            console.log(msg);
+        };
+
+        try {
+            log('✓ Iniciando teste de módulos...\n');
+
+            // Teste 1: Importar statsComponents
+            import('../modules/statsComponents.js').then(module => {
+                log('✓ statsComponents.js carregado');
+                const funcs = ['createEliminationBar', 'createTable', 'createTabs', 'createStateContainer', 'createCard', 'createStatsCards', 'createFiltersSection', 'createSelector', 'createLegend', 'createInfoPanel'];
+                funcs.forEach(f => {
+                    if (typeof module[f] === 'function') {
+                        log(`  ✓ ${f} encontrada`);
+                    } else {
+                        log(`  ✗ ${f} NÃO ENCONTRADA`);
+                    }
+                });
+            }).catch(err => {
+                log('✗ Erro ao carregar statsComponents.js: ' + err.message);
+            });
+
+            // Teste 2: Importar domUtils
+            import('../modules/domUtils.js').then(module => {
+                log('\n✓ domUtils.js carregado');
+                const funcs = ['el', 'show', 'hide', 'setHTML', 'on', 'getValue'];
+                funcs.forEach(f => {
+                    if (typeof module[f] === 'function') {
+                        log(`  ✓ ${f} encontrada`);
+                    } else {
+                        log(`  ✗ ${f} NÃO ENCONTRADA`);
+                    }
+                });
+            }).catch(err => {
+                log('\n✗ Erro ao carregar domUtils.js: ' + err.message);
+            });
+
+            // Teste 3: Importar dataProcessor
+            import('../modules/dataProcessor.js').then(module => {
+                log('\n✓ dataProcessor.js carregado');
+                const funcs = ['processMatches', 'calculateMedals', 'sortData', 'filterData', 'getWinrateColor'];
+                funcs.forEach(f => {
+                    if (typeof module[f] === 'function') {
+                        log(`  ✓ ${f} encontrada`);
+                    } else {
+                        log(`  ✗ ${f} NÃO ENCONTRADA`);
+                    }
+                });
+            }).catch(err => {
+                log('\n✗ Erro ao carregar dataProcessor.js: ' + err.message);
+            });
+
+            // Teste 4: Importar pages
+            import('./pages/stats.js').then(module => {
+                log('\n✓ stats.js carregado com sucesso');
+            }).catch(err => {
+                log('\n✗ Erro ao carregar stats.js: ' + err.message);
+            });
+
+            log('\n---\nAguardando carregamento assíncrono...');
+            
+        } catch (err) {
+            log('✗ Erro geral: ' + err.message);
+        }
+    </script>
+</body>
+</html>

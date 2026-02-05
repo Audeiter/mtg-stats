@@ -3,7 +3,7 @@
  * Controla a lógica da página de registro de partidas com novo layout
  */
 
-import { supabase } from '../modules/supabaseClient.js';
+import { supabase, createPlayer, createDeck } from '../modules/supabaseClient.js';
 import { el, on } from '../modules/domUtils.js';
 
 // Classe Autocomplete customizada
@@ -105,6 +105,10 @@ class RegisterPage {
     this.eliminatedPlayerCount = 0;
     this.autocompletes = [];
     this.formPlayers = []; // Jogadores inseridos no formulário (vencedor + eliminados)
+    this.notFoundData = { // Rastreia dados não encontrados para registro posterior
+      players: new Map(), // Map: playerName -> { playerName }
+      decks: new Map()    // Map: deckKey -> { playerName, deckName }
+    };
     
     // Elementos do formulário
     this.matchForm = el('matchForm');
@@ -413,6 +417,7 @@ class RegisterPage {
     const winnerExists = this.allPlayers.some(p => p.name === winner);
     if (!winnerExists) {
       notFoundData.players.add(winner);
+      this.notFoundData.players.set(winner, { playerName: winner });
     }
 
     const winnerPlayer = this.allPlayers.find(p => p.name === winner);
@@ -420,9 +425,11 @@ class RegisterPage {
       const deckExists = this.allDecks[winnerPlayer.player_id].some(d => d.name === winnerDeck);
       if (!deckExists) {
         notFoundData.decks.add(`${winnerDeck} (${winner})`);
+        this.notFoundData.decks.set(`${winner}|${winnerDeck}`, { playerName: winner, deckName: winnerDeck });
       }
     } else if (winnerPlayer && !this.allDecks[winnerPlayer.player_id]) {
       notFoundData.decks.add(`${winnerDeck} (${winner})`);
+      this.notFoundData.decks.set(`${winner}|${winnerDeck}`, { playerName: winner, deckName: winnerDeck });
     }
 
     // Valida jogadores eliminados
@@ -447,15 +454,18 @@ class RegisterPage {
         const elimExists = this.allPlayers.some(p => p.name === name);
         if (name && !elimExists) {
           notFoundData.players.add(name);
+          this.notFoundData.players.set(name, { playerName: name });
         } else if (name) {
           const elimPlayer = this.allPlayers.find(p => p.name === name);
           if (elimPlayer && this.allDecks[elimPlayer.player_id]) {
             const deckExists = this.allDecks[elimPlayer.player_id].some(d => d.name === deck);
             if (!deckExists && deck) {
               notFoundData.decks.add(`${deck} (${name})`);
+              this.notFoundData.decks.set(`${name}|${deck}`, { playerName: name, deckName: deck });
             }
           } else if (elimPlayer && !this.allDecks[elimPlayer.player_id] && deck) {
             notFoundData.decks.add(`${deck} (${name})`);
+            this.notFoundData.decks.set(`${name}|${deck}`, { playerName: name, deckName: deck });
           }
         }
       }
@@ -522,13 +532,73 @@ class RegisterPage {
     this.validationModal.classList.add('active');
   }
 
+  async registerMissingData() {
+    try {
+      // Processa jogadores não encontrados
+      for (const [playerName, playerData] of this.notFoundData.players.entries()) {
+        // Verifica se o jogador ainda não existe (pode ter sido criado enquanto o modal estava aberto)
+        const exists = this.allPlayers.some(p => p.name === playerName);
+        if (!exists) {
+          const newPlayer = await createPlayer(playerName);
+          if (newPlayer) {
+            // Adiciona o novo jogador à lista
+            this.allPlayers.push(newPlayer);
+            this.activePlayers.push(newPlayer);
+            // Inicializa arrays para os decks
+            if (!this.allDecks[newPlayer.player_id]) {
+              this.allDecks[newPlayer.player_id] = [];
+            }
+            if (!this.activeDecks[newPlayer.player_id]) {
+              this.activeDecks[newPlayer.player_id] = [];
+            }
+          }
+        }
+      }
+
+      // Processa decks não encontrados
+      for (const [deckKey, deckData] of this.notFoundData.decks.entries()) {
+        const { playerName, deckName } = deckData;
+        
+        // Encontra o jogador (que pode ter sido criado agora)
+        let player = this.allPlayers.find(p => p.name === playerName);
+        
+        if (player) {
+          // Verifica se o deck já existe para este jogador
+          const deckExists = this.allDecks[player.player_id]?.some(d => d.name === deckName);
+          if (!deckExists) {
+            const newDeck = await createDeck(player.player_id, deckName);
+            if (newDeck) {
+              // Adiciona o novo deck à lista
+              this.allDecks[player.player_id].push({ id: newDeck.deck_id, name: newDeck.deck_name, status: newDeck.status });
+              this.activeDecks[player.player_id].push(newDeck.deck_name);
+            }
+          }
+        }
+      }
+
+      // Limpa os dados não encontrados após o registro
+      this.notFoundData.players.clear();
+      this.notFoundData.decks.clear();
+    } catch (err) {
+      console.error('Erro ao registrar dados não encontrados:', err);
+      throw err;
+    }
+  }
+
   handleCloseValidation() {
     this.validationModal.classList.remove('active');
   }
 
   async handleContinueInvalid() {
     this.validationModal.classList.remove('active');
-    await this.saveMatch();
+    
+    try {
+      // Registra os dados não encontrados antes de salvar a partida
+      await this.registerMissingData();
+      await this.saveMatch();
+    } catch (err) {
+      alert('Erro ao registrar dados: ' + err.message);
+    }
   }
 
   async handleSubmit(e) {

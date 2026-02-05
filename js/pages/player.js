@@ -3,6 +3,7 @@
  * Gerencia perfil de jogadores, estatísticas e decks
  */
 
+import { createTable, createEliminationBar } from '../modules/statsComponents.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
@@ -180,66 +181,93 @@ async function loadAndRenderDecks(playerName) {
       return;
     }
 
-    const tableHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Nome do Deck</th>
-            <th>Cores</th>
-            <th>CMC</th>
-            <th>Tags</th>
-            <th>URL Lista</th>
-            <th>Custo USD</th>
-            <th>Bracket</th>
-            <th style="text-align: center;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${decks.map(deck => `
-            <tr id="deck-row-${deck.docId}">
-              <td><input type="text" value="${deck.deckName || ''}" data-field="deckName" class="deck-input deck-name-input"></td>
-              <td>
-                <div class="color-selector" data-deck-id="${deck.docId}">
-                  ${['W', 'U', 'B', 'R', 'G'].map(c => `
-                    <input type="checkbox" 
-                           class="color-checkbox color-${c} deck-color-checkbox" 
-                           data-color="${c}"
-                           ${(deck.colors || []).includes(c) ? 'checked' : ''}
-                           title="${c}">
-                  `).join('')}
-                </div>
-              </td>
-              <td><input type="number" min="0" step="1" value="${deck.cmc || ''}" data-field="cmc" placeholder="0" class="deck-input deck-cmc-input" style="text-align: center;"></td>
-              <td><input type="text" value="${deck.strategy || ''}" data-field="strategy" placeholder="Tags..." class="deck-input deck-strategy-input"></td>
-              <td><input type="url" value="${deck.listURL || ''}" data-field="listURL" placeholder="https://..." class="deck-input deck-list-url-input"></td>
-              <td><input type="text" value="${formatUSDDisplay(deck.costUSD)}" data-field="costUSD" placeholder="$ 0,00" class="deck-input deck-cost-usd-input" style="text-align: right;"></td>
-              <td>
-                <select data-field="bracket" class="deck-input deck-bracket-select">
-                  <option value="Unset" ${deck.bracket === 'Unset' || !deck.bracket ? 'selected' : ''}>Unset</option>
-                  <option value="1 - Exhibition" ${deck.bracket === '1 - Exhibition' ? 'selected' : ''}>1 - Exh</option>
-                  <option value="2 - Core" ${deck.bracket === '2 - Core' ? 'selected' : ''}>2 - Core</option>
-                  <option value="3 - Upgraded" ${deck.bracket === '3 - Upgraded' ? 'selected' : ''}>3 - Upg</option>
-                  <option value="4 - Optimized" ${deck.bracket === '4 - Optimized' ? 'selected' : ''}>4 - Opt</option>
-                  <option value="5 - cEDH" ${deck.bracket === '5 - cEDH' ? 'selected' : ''}>5 - cEDH</option>
-                </select>
-              </td>
-              <td style="text-align: center;">
-                <div class="deck-actions">
-                  <button onclick="updateDeck('${deck.docId}', '${playerName}')" class="btn btn-success btn-sm">Salvar</button>
-                  <button onclick="importDeckData('${deck.docId}')" class="btn btn-primary btn-sm">Import</button>
-                  <button onclick="deleteDeck('${deck.docId}', '${playerName}')" class="btn btn-danger btn-sm">Del</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    const headers = [
+      { label: 'Nome do Deck', key: 'deckName', width: 'flex' },
+      { label: 'Cores', key: 'colors', width: '100px' },
+      { label: 'CMC', key: 'cmc', width: '70px' },
+      { label: 'Tags', key: 'strategy', width: '110px' },
+      { label: 'URL Lista', key: 'listURL', width: '120px' },
+      { label: 'Custo USD', key: 'costUSD', width: '100px' },
+      { label: 'Bracket', key: 'bracket', width: '110px' },
+      { label: 'Ações', key: 'actions', width: '120px' }
+    ];
+
+    const rows = decks.map((deck, idx) => ({
+      docId: deck.docId,
+      idx: idx + 1,
+      deckName: deck.deckName || '',
+      colors: deck.colors || [],
+      cmc: deck.cmc || '',
+      strategy: deck.strategy || '',
+      listURL: deck.listURL || '',
+      costUSD: formatUSDDisplay(deck.costUSD),
+      bracket: deck.bracket || 'Unset',
+      actions: deck.docId,
+      playerName: playerName,
+      fullDeck: deck
+    }));
+
+    const tableHTML = createDecksTable(headers, rows, playerName);
     decksContainer.innerHTML = tableHTML;
   } catch (error) {
     console.error("Erro ao carregar decks:", error);
     decksContainer.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 1rem;">Erro ao carregar decks</p>`;
   }
+}
+
+/**
+ * Cria tabela customizada de decks
+ */
+function createDecksTable(headers, rows, playerName) {
+  const headerHTML = headers.map(h => `<th style="width: ${h.width || 'auto'};">${h.label}</th>`).join('');
+  
+  const rowsHTML = rows.map(row => {
+    const deck = row.fullDeck;
+    return `<tr id="deck-row-${row.docId}">
+      <td><input type="text" value="${row.deckName}" data-field="deckName" class="deck-input deck-name-input"></td>
+      <td>
+        <div class="color-selector" data-deck-id="${row.docId}">
+          ${['W', 'U', 'B', 'R', 'G'].map(c => `
+            <input type="checkbox" 
+                   class="color-checkbox color-${c} deck-color-checkbox" 
+                   data-color="${c}"
+                   ${(row.colors || []).includes(c) ? 'checked' : ''}
+                   title="${c}">
+          `).join('')}
+        </div>
+      </td>
+      <td><input type="number" min="0" step="1" value="${row.cmc}" data-field="cmc" placeholder="0" class="deck-input deck-cmc-input" style="text-align: center;"></td>
+      <td><input type="text" value="${row.strategy}" data-field="strategy" placeholder="Tags..." class="deck-input deck-strategy-input"></td>
+      <td><input type="url" value="${row.listURL}" data-field="listURL" placeholder="https://..." class="deck-input deck-list-url-input"></td>
+      <td><input type="text" value="${row.costUSD}" data-field="costUSD" placeholder="$ 0,00" class="deck-input deck-cost-usd-input" style="text-align: right;"></td>
+      <td>
+        <select data-field="bracket" class="deck-input deck-bracket-select">
+          <option value="Unset" ${row.bracket === 'Unset' || !row.bracket ? 'selected' : ''}>Unset</option>
+          <option value="1 - Exhibition" ${row.bracket === '1 - Exhibition' ? 'selected' : ''}>1 - Exh</option>
+          <option value="2 - Core" ${row.bracket === '2 - Core' ? 'selected' : ''}>2 - Core</option>
+          <option value="3 - Upgraded" ${row.bracket === '3 - Upgraded' ? 'selected' : ''}>3 - Upg</option>
+          <option value="4 - Optimized" ${row.bracket === '4 - Optimized' ? 'selected' : ''}>4 - Opt</option>
+          <option value="5 - cEDH" ${row.bracket === '5 - cEDH' ? 'selected' : ''}>5 - cEDH</option>
+        </select>
+      </td>
+      <td style="text-align: center;">
+        <div class="deck-actions">
+          <button onclick="updateDeck('${row.docId}', '${playerName}')" class="btn btn-success btn-sm">Salvar</button>
+          <button onclick="importDeckData('${row.docId}')" class="btn btn-primary btn-sm">Import</button>
+          <button onclick="deleteDeck('${row.docId}', '${playerName}')" class="btn btn-danger btn-sm">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<table class="stats-table">
+    <thead>
+      <tr>${headerHTML}</tr>
+    </thead>
+    <tbody>
+      ${rowsHTML}
+    </tbody>
+  </table>`;
 }
 
 /**

@@ -260,6 +260,51 @@
             }
         }
 
+        /* Colunas de tamanho fixo */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .table-wrapper table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .table-wrapper table thead th:nth-child(1),
+        .table-wrapper table tbody td:nth-child(1) {
+            width: 120px;
+        }
+
+        .table-wrapper table thead th:nth-child(2),
+        .table-wrapper table tbody td:nth-child(2) {
+            width: 100px;
+        }
+
+        .table-wrapper table thead th:nth-child(3),
+        .table-wrapper table tbody td:nth-child(3) {
+            width: 25%;
+        }
+
+        .table-wrapper table thead th:nth-child(4),
+        .table-wrapper table tbody td:nth-child(4) {
+            width: 25%;
+        }
+
+        .table-wrapper table thead th:nth-child(5),
+        .table-wrapper table tbody td:nth-child(5) {
+            width: 25%;
+        }
+
+        .table-wrapper table thead th:nth-child(6),
+        .table-wrapper table tbody td:nth-child(6) {
+            width: 25%;
+        }
+
+        .table-wrapper table thead th:nth-child(7),
+        .table-wrapper table tbody td:nth-child(7) {
+            width: 60px;
+        }
+
         .elimination-name {
             color: #ff6b6b;
             font-weight: 300;
@@ -408,12 +453,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th data-sort="date"><span>Data</span><span class="sort-arrow">↓</span></th>
-                            <th data-sort="turn" style="text-align: center;"><span>Turno</span><span class="sort-arrow">↕</span></th>
-                            <th data-sort="winner"><span class="text-rank-gold">1º Lugar</span><span class="sort-arrow">↕</span></th>
-                            <th data-sort="2nd"><span>2º Lugar</span><span class="sort-arrow">↕</span></th>
-                            <th data-sort="3rd"><span>3º Lugar</span><span class="sort-arrow">↕</span></th>
-                            <th data-sort="4th"><span>4º Lugar</span><span class="sort-arrow">↕</span></th>
+                            <th data-sort="date"><span>Data</span><span class="sort-arrow">▼</span></th>
+                            <th data-sort="turn" style="text-align: center;"><span>Turno</span><span class="sort-arrow">▼</span></th>
+                            <th data-sort="winner"><span class="text-rank-gold">1º Lugar</span><span class="sort-arrow">▼</span></th>
+                            <th data-sort="2nd"><span>2º Lugar</span><span class="sort-arrow">▼</span></th>
+                            <th data-sort="3rd"><span>3º Lugar</span><span class="sort-arrow">▼</span></th>
+                            <th data-sort="4th"><span>4º Lugar</span><span class="sort-arrow">▼</span></th>
                             <th style="text-align: center;"><span>Info</span></th>
                         </tr>
                     </thead>

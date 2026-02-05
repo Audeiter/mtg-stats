@@ -36,11 +36,11 @@ export async function fetchMatches() {
   // Busca todos os players e decks de forma separada
   const { data: players, error: playerError } = await supabase
     .from('players')
-    .select('player_id, name');
+    .select('player_id, name, status');
   
   const { data: decks, error: deckError } = await supabase
     .from('decks')
-    .select('deck_id, deck_name');
+    .select('deck_id, deck_name, status, color_identity');
   
   if (playerError) throw playerError;
   if (deckError) throw deckError;
@@ -112,7 +112,7 @@ export async function fetchMatchParticipants(matchId) {
   
   const { data: decks } = await supabase
     .from('decks')
-    .select('deck_id, deck_name')
+    .select('deck_id, deck_name, color_identity')
     .in('deck_id', deckIds.length > 0 ? deckIds : ['0']);
   
   const playersMap = Object.fromEntries((players || []).map(p => [p.player_id, p]));
@@ -124,6 +124,64 @@ export async function fetchMatchParticipants(matchId) {
   });
   
   return participantList;
+}
+
+/**
+ * Cria um novo jogador na base de dados
+ */
+export async function createPlayer(playerName) {
+  const { data, error } = await supabase
+    .from('players')
+    .insert([{ name: playerName, status: true }])
+    .select();
+  
+  if (error) throw error;
+  return data && data[0] ? data[0] : null;
+}
+
+/**
+ * Cria um novo deck na base de dados
+ * O deck_id segue o padrão XXYYY onde:
+ * XX = ID do jogador (2 dígitos)
+ * YYY = ID sequencial do deck do jogador (3 dígitos)
+ */
+export async function createDeck(playerId, deckName) {
+  try {
+    // Busca o maior deck_id para este jogador
+    const { data: existingDecks, error: fetchError } = await supabase
+      .from('decks')
+      .select('deck_id')
+      .eq('player_id', playerId)
+      .order('deck_id', { ascending: false })
+      .limit(1);
+    
+    if (fetchError) throw fetchError;
+    
+    // Calcula o próximo YYY
+    let nextDeckNumber = 1;
+    if (existingDecks && existingDecks.length > 0) {
+      // Extrai YYY do deck_id anterior (últimos 3 dígitos)
+      const lastDeckId = existingDecks[0].deck_id;
+      const lastNumber = parseInt(String(lastDeckId).slice(-3));
+      nextDeckNumber = lastNumber + 1;
+    }
+    
+    // Constrói o novo deck_id (XXYYY)
+    const playerIdStr = String(playerId).padStart(2, '0');
+    const deckNumberStr = String(nextDeckNumber).padStart(3, '0');
+    const newDeckId = parseInt(playerIdStr + deckNumberStr);
+    
+    const { data, error } = await supabase
+      .from('decks')
+      .insert([{ deck_id: newDeckId, player_id: playerId, deck_name: deckName, status: true }])
+      .select();
+    
+    if (error) throw error;
+    return data && data[0] ? data[0] : null;
+  } catch (err) {
+    console.error('Erro ao criar deck:', err);
+    throw err;
+  }
 }
 
 /**
@@ -210,7 +268,7 @@ export async function fetchAllMatchParticipants(matchIds) {
   
   const { data: decks } = await supabase
     .from('decks')
-    .select('deck_id, deck_name')
+    .select('deck_id, deck_name, color_identity')
     .in('deck_id', deckIds.length > 0 ? deckIds : ['0']);
   
   const playersMap = Object.fromEntries((players || []).map(p => [p.player_id, p]));

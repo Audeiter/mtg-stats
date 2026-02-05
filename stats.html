@@ -7,54 +7,6 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 1.5rem;
-            gap: 1rem;
-        }
-
-        .stat-info h1 {
-            margin-bottom: 0.5rem;
-        }
-
-        .status-live {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--success);
-        }
-
-        .status-dot {
-            width: 0.5rem;
-            height: 0.5rem;
-            background-color: var(--success);
-            border-radius: 50%;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .btn-refresh {
-            padding: 0.5rem;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .btn-refresh:hover {
-            background-color: var(--border-color);
-        }
-
         .tabs {
             display: flex;
             gap: 1rem;
@@ -62,27 +14,148 @@
             margin-bottom: 1.5rem;
         }
 
-        .controls {
-            display: flex;
-            gap: 1rem;
+        .tabs .tab {
+            padding: 0.75rem 1rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .tabs .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tabs .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .filters-section {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
             margin-bottom: 1.5rem;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
             flex-wrap: wrap;
         }
 
-        .controls select,
-        .controls input {
-            flex: 1;
-            min-width: 150px;
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 auto;
+        }
+
+        .filter-group.search-field {
+            flex: 1 1 auto;
+            min-width: 250px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .filter-group input[type="text"],
+        .filter-group input[type="date"],
+        .filter-group select {
+            padding: 0.5rem 0.625rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+            height: 2.25rem;
+        }
+
+        .filter-group input[type="text"]:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: var(--bg-primary);
+        }
+
+        .filter-group input[type="checkbox"] {
+            margin-right: 0.5rem;
+            cursor: pointer;
         }
 
         .table-wrapper {
             border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            overflow: hidden;
+            overflow-x: auto;
         }
 
-        tbody tr:last-child td {
-            border-bottom: none;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background-color: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        th {
+            padding: 0.5rem 0.35rem;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        th:hover {
+            background-color: rgba(62, 102, 120, 0.3);
+            color: var(--text-primary);
+        }
+
+        td {
+            padding: 0.4rem 0.3rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        td:first-child {
+            text-align: left;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(62, 102, 120, 0.3);
+        }
+
+        tbody tr.others-row {
+            background-color: rgba(79, 70, 229, 0.1);
+            font-weight: 500;
+        }
+
+        tbody tr.others-row:hover {
+            background-color: rgba(62, 102, 120, 0.3);
+        }
+
+        .sort-indicator {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 0.25rem;
         }
 
         .loading-spinner {
@@ -96,29 +169,53 @@
             margin-bottom: 1rem;
         }
 
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .elim-bar {
+                width: 80px;
+                height: 16px;
+            }
+
+            .elim-segment {
+                font-size: 0.6rem;
+            }
+        }
+
         @media (max-width: 768px) {
-            .stat-header {
+            .filter-row {
                 flex-direction: column;
+                align-items: stretch;
             }
 
-            .tabs {
-                gap: 0.5rem;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-
-            .controls select,
-            .controls input {
+            .filter-group,
+            .filter-group.search-field {
+                flex: 1;
                 min-width: auto;
+            }
+
+            .filter-group input[type="text"],
+            .filter-group select {
+                width: 100%;
             }
 
             table {
                 font-size: 0.75rem;
             }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
+
 </head>
 <body>
     <div class="container-lg">
@@ -137,17 +234,54 @@
             <div class="tabs">
                 <button id="tab-players" class="tab active">Jogadores</button>
                 <button id="tab-decks" class="tab">Decks</button>
+                <button id="tab-colors" class="tab">Cores</button>
+                <button id="tab-strategy" class="tab">Estratégia</button>
+                <button id="tab-retrospective" class="tab">Retrospectiva</button>
             </div>
 
-            <div class="controls">
-                <select id="year-select" class="list-simple-select">
-                    <option value="total">Geral (Tudo)</option>
-                    <option value="2026">2026</option>
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                </select>
-                <input type="text" id="search-input" placeholder="Buscar..." />
+            <div id="filters-section" class="filters-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Ano</label>
+                        <select id="year-select">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                            <option value="2019">2019</option>
+                            <option value="2018">2018</option>
+                            <option value="2017">2017</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Nº de Jogos</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <select id="min-games-type" style="flex: 1; min-width: 120px;">
+                                <option value="2023_plus">PRM (2023+)</option>
+                                <option value="total">HISTÓRICO</option>
+                                <option value="year">ANO SELECIONADO</option>
+                            </select>
+                            <input type="number" id="min-games-count" value="5" min="0" max="999" style="flex: 0 0 70px; padding: 0.5rem 0.625rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 0.375rem; color: var(--text-primary); font-size: 0.875rem; height: 2.25rem;" />
+                        </div>
+                    </div>
+                    <div class="filter-group" style="flex: 0 0 200px;">
+                        <label>Jogador</label>
+                        <input type="text" id="search-player" placeholder="Nome..." />
+                    </div>
+                    <div class="filter-group" style="flex: 0 0 600px;">
+                        <label>Deck</label>
+                        <input type="text" id="search-deck" placeholder="Nome do deck..." />
+                    </div>
+                    <div class="filter-group" style="display: flex; align-items: flex-end; padding-bottom: 0.125rem;">
+                        <label style="display: flex; align-items: center; margin-bottom: 0;">
+                            <input type="checkbox" id="show-retired" style="margin-right: 0.35rem;" />
+                            <span style="font-size: 0.875rem;">Mostrar todos</span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <div id="loading-msg" class="text-center p-6">
@@ -162,6 +296,35 @@
                     </thead>
                     <tbody id="table-body"></tbody>
                 </table>
+            </div>
+
+            <!-- Container para Cores -->
+            <div id="colors-container" class="hidden"></div>
+
+            <!-- Container para Estratégia -->
+            <div id="strategy-container" class="hidden"></div>
+
+            <!-- Container para Retrospectiva -->
+            <div id="retrospective-loading" class="text-center p-6 hidden">
+                <div class="loading-spinner"></div>
+                <p>Carregando retrospectiva...</p>
+            </div>
+            <div id="retrospective-container" class="hidden">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-right: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">Ano:</label>
+                    <select id="retrospective-year-select" style="padding: 0.5rem 0.625rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 0.375rem; color: var(--text-primary); font-size: 0.875rem;">
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                        <option value="2019">2019</option>
+                        <option value="2018">2018</option>
+                        <option value="2017">2017</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>

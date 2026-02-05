@@ -3,6 +3,7 @@
  * Controla a lógica da página de gerenciamento de partidas
  */
 
+import { createTable, createCard } from '../modules/statsComponents.js';
 import { 
   supabase,
   fetchAllMatches,
